@@ -1,5 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
-const express = require('express');
+const express = require("express");
 require("dotenv").config();
 
 const app = express();
@@ -28,15 +28,15 @@ console.log("Supabase client initialized");
 })();
 
 // Route to get user by ID
-app.get('/api/users/:userId', async (req, res) => {
+app.get("/api/users/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
     // Query the 'users' table for a user with matching user_id
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('user_id', userId)
+      .from("users")
+      .select("*")
+      .eq("user_id", userId)
       .maybeSingle(); // Changed from .single() to .maybeSingle()
 
     if (error) {
