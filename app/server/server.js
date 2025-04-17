@@ -55,6 +55,34 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
+app.delete("/api/users/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from("users")
+      .delete()
+      .eq("user_id", userId)
+      .select(); // Needed to return the deleted row(s)
+
+    if (error) {
+      console.error("Error deleting user:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "User deleted successfully", deleted: data });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
