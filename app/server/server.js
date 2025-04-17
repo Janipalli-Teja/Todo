@@ -83,6 +83,40 @@ app.delete("/api/users/:userId", async (req, res) => {
   }
 });
 
+app.post("/api/categories", async (req, res) => {
+  try {
+    const { name, description, category_type, user_id } = req.body;
+
+    if (!name || !category_type || !user_id) {
+      return res
+        .status(400)
+        .json({ error: "name, category_type, and user_id are required" });
+    }
+
+    const { data, error } = await supabase.from("categories").insert([
+      {
+        name,
+        description,
+        category_type, // should be either 'default' or 'user_created'
+        user_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ]).select(); // Return the inserted row
+
+    if (error) {
+      console.error("Error creating category:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(201).json({ message: "Category created", category: data[0] });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
