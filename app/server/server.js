@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const todoRoutes = require('./routes/todo.route');
 const express = require("express");
 require("dotenv").config();
 
@@ -55,8 +56,11 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
+//middileware
+app.use('/api', todoRoutes);
+
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
