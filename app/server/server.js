@@ -1,5 +1,4 @@
 const { createClient } = require("@supabase/supabase-js");
-const todoRoutes = require('./routes/todo.route');
 const express = require("express");
 require("dotenv").config();
 
@@ -28,17 +27,18 @@ console.log("Supabase client initialized");
   }
 })();
 
-// Route to get user by ID
+// --------------------- Routes ----------------------
+
+// GET /api/users/:userId - Get user by ID
 app.get("/api/users/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Query the 'users' table for a user with matching user_id
     const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("user_id", userId)
-      .maybeSingle(); // Changed from .single() to .maybeSingle()
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching user:", error.message);
@@ -56,8 +56,87 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
-//middileware
-app.use('/api', todoRoutes);
+// GET /api/todos - Get all todos with selected fields
+app.get('/api/user/:userId/todos', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('todo') // make sure your table is actually called "todo" (not "todos")
+      .select('todo_name, todo_description, todo_status, category_id')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    res.status(200).json(data);
+  } catch (err) {
+    console.error('Error fetching user todos:', err.message);
+    res.status(500).json({ error: 'Failed to fetch user todos' });
+  }
+});
+
+
+// POST /api/user/:userId/todos - Create a new todo for a specific user
+app.post('/api/user/:userId/todos', async (req, res) => {
+  const { userId } = req.params;
+  const {
+    todo_name,
+    todo_description,
+    todo_type = 'non-recurring',
+    todo_status = 'pending',
+    category_id
+  } = req.body;
+
+  if (!todo_name || !todo_description) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('todo')
+      .insert([{
+        todo_name,
+        todo_description,
+        todo_type,
+        todo_status,
+        user_id: userId,
+        category_id,
+      }])
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+
+    res.status(201).json({ message: 'Todo created', todo: data });
+  } catch (err) {
+    console.error('Error creating todo:', err.message);
+    res.status(500).json({ error: 'Failed to create todo' });
+  }
+});
+
+
+// DELETE /api/user/:userId/todos/:todoId - Delete a specific todo for a user
+app.delete('/api/user/:userId/todos/:todoId', async (req, res) => {
+  const { userId, todoId } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from('todo')
+      .delete()
+      .eq('todo_id', todoId)
+      .eq('user_id', userId); // ensures the todo belongs to the user
+
+    if (error) throw error;
+
+    res.json({ message: `Todo with id ${todoId} deleted for user ${userId}.` });
+  } catch (err) {
+    console.error('Error deleting todo:', err.message);
+    res.status(500).json({ error: 'Failed to delete todo' });
+  }
+});
+
+
+// ------------------- End Routes --------------------
 
 // Start the server
 const PORT = process.env.PORT || 3001;
